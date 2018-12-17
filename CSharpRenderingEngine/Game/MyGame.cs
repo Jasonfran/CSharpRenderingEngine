@@ -16,9 +16,9 @@ namespace Engine.Game
 
         public MyGame(EngineSystemsCollection engineSystems, GameSystemCollection gameSystems) : base(engineSystems, gameSystems)
         {
-            gameSystems.AddSystem(new RenderSystem(engineSystems));
+            //gameSystems.AddSystem(new RenderManager(engineSystems));
 
-            gameSystems.InitAll();
+            //gameSystems.InitAll();
         }
 
         public override void Init()
@@ -30,9 +30,12 @@ namespace Engine.Game
             var world = _worldManager.NewWorld();
             _worldManager.SetActiveWorld(world);
 
-            var entity = _entityManager.NewEntity();
-            entity.AddComponent(new ModelComponent("Models/cube.obj"));
-            world.AddChild(entity);
+            for (int i = 0; i < 20; i++)
+            {
+                var entity = _entityManager.NewEntity();
+                entity.AddComponent(new RenderableComponent(_resourceManager.LoadModel("Models/cube.obj")));
+                world.AddChild(entity);
+            }
         }
 
         public override void Update(float dt)

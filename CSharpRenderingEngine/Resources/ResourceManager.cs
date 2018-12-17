@@ -96,7 +96,7 @@ namespace Engine.Resources
                 return mesh;
             }
 
-            var model = new Model();
+            var model = new Model(filePath.ToLower());
 
             var context = new AssimpContext();
             var scene = context.ImportFile(path, PostProcessSteps.Triangulate);

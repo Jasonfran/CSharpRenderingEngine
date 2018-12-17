@@ -10,25 +10,16 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace Engine.Renderer
 {
-    public class RenderManager : EngineSystem
+    public class OpenGLRendererCore : EngineSystem
     {
         private readonly EngineSystemsCollection _engineSystems;
         private WorldManager _worldManager;
         private WindowManager _windowManager;
 
-        private List<RenderCommand> _renderCommands;
         private Dictionary<string, List<BufferPointer>> _bufferDataPointers;
         private List<Vertex> _vertices;
         private List<uint> _indices;
         private int _initialBufferSize = 1024 * 1024 * Vertex.Stride; // 32MB of initial buffer storage
-        private int _resizeBufferSize = 1024 * 1024 * Vertex.Stride; // 32MB extra buffer after resize
-
-
-        private int _vboVertexSize = 0;
-        private int _eboIndicesSize = 0;
-
-        private int _vboVertexFill = 0;
-        private int _eboIndicesFill = 0;
 
         private int _vao;
         private int _vboVertex;
@@ -37,10 +28,12 @@ namespace Engine.Renderer
 
         private Shader testShader;
 
-        public RenderManager(EngineSystemsCollection engineSystems) : base(engineSystems)
+        private Matrix4 view;
+        private Matrix4 projection;
+
+        public OpenGLRendererCore(EngineSystemsCollection engineSystems) : base(engineSystems)
         {
             _engineSystems = engineSystems;
-            _renderCommands = new List<RenderCommand>();
             _bufferDataPointers = new Dictionary<string, List<BufferPointer>>();
             _vertices = new List<Vertex>();
             _indices = new List<uint>();
@@ -68,7 +61,6 @@ namespace Engine.Renderer
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboVertex);
             GL.BufferData(BufferTarget.ArrayBuffer, _initialBufferSize, IntPtr.Zero, BufferUsageHint.StaticDraw);
-            _vboVertexSize = _initialBufferSize;
 
             GL.EnableVertexAttribArray(0);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, Vertex.Stride, 0);
@@ -83,28 +75,15 @@ namespace Engine.Renderer
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _eboIndices);
             GL.BufferData(BufferTarget.ElementArrayBuffer, _initialBufferSize, IntPtr.Zero, BufferUsageHint.StaticDraw);
-            _eboIndicesSize = _initialBufferSize;
+
+            view = Matrix4.CreateTranslation(0.0f, 0.0f, -5.0f);
+            projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(75.0f),
+                (float)_windowManager.GetActiveWindow().Width / (float)_windowManager.GetActiveWindow().Height, 0.1f, 10000.0f);
         }
 
-        private void ResizeBuffer(BufferTarget target, int size)
+        private void LoadModelData(Model model)
         {
-            GL.BufferData(target, size, IntPtr.Zero, BufferUsageHint.StaticDraw);
-            Console.WriteLine($"Resized buffer {target}");
-        }
-
-        private void AddBufferDataPointer(string name, int start, int count)
-        {
-            if (!_bufferDataPointers.ContainsKey(name))
-            {
-                _bufferDataPointers.Add(name, new List<BufferPointer>());
-            }
-
-            _bufferDataPointers[name].Add(new BufferPointer(start, count));
-        }
-
-        private void LoadModelData(string name)
-        {
-            var model = _resourceManager.LoadModel(name);
+            var name = model.Path;
             var meshes = model.Meshes;
 
             _bufferDataPointers.Add(name, new List<BufferPointer>());
@@ -122,43 +101,38 @@ namespace Engine.Renderer
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Count * sizeof(uint), _indices.ToArray(),
                 BufferUsageHint.StaticDraw);
 
+            Console.WriteLine($"Loaded {model.Path} into VBO");
         }
 
-        public void SendRenderData(RenderCommand command)
+        public void RenderModel(Model model, Matrix4 modelMatrix)
         {
-            _renderCommands.Add(command);
-            if (!_bufferDataPointers.ContainsKey(command.ModelName))
+            if (!_bufferDataPointers.ContainsKey(model.Path))
             {
-                LoadModelData(command.ModelName);
+                LoadModelData(model);
+            }
+
+            if (_bufferDataPointers.TryGetValue(model.Path, out var pointers))
+            {
+                foreach (var pointer in pointers)
+                {
+                    testShader.SetMat4("model", modelMatrix);
+                    testShader.SetMat4("mvp", modelMatrix * view * projection);
+
+                    GL.DrawElementsBaseVertex(PrimitiveType.Triangles, pointer.count, DrawElementsType.UnsignedInt, (IntPtr)0, pointer.start);
+                }
             }
         }
 
-        public void Render()
+        public void FrameBegin()
         {
             GL.ClearColor(Color4.White);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            foreach (var data in _renderCommands)
-            {
-                if (_bufferDataPointers.TryGetValue(data.ModelName, out var pointers))
-                {
-                    foreach (var pointer in pointers)
-                    {
+        }
 
-                        var model = data.Entity.Transform.ModelMatrix;
-                        var view = Matrix4.CreateTranslation(0.0f, 0.0f, -5.0f);
-                        var projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(75.0f),
-                            (float)_windowManager.GetActiveWindow().Width / (float)_windowManager.GetActiveWindow().Height, 0.1f, 10000.0f);
+        public void FrameEnd()
+        {
 
-                        testShader.SetMat4("model", model);
-                        testShader.SetMat4("mvp", model * view * projection);
-
-                        GL.DrawElementsBaseVertex(PrimitiveType.Triangles, pointer.count, DrawElementsType.UnsignedInt, (IntPtr)0, pointer.start);
-                    }
-                }
-            }
-
-            _renderCommands.Clear();
-            
+            _windowManager.GetActiveWindow().SwapBuffers();
         }
     }
 }

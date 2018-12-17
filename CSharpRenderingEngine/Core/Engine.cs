@@ -2,6 +2,7 @@
 using Engine.Game;
 using Engine.Renderer;
 using Engine.Resources;
+using Engine.System;
 using Engine.World;
 using OpenTK;
 
@@ -24,8 +25,9 @@ namespace Engine.Core
             _engineSystems.AddSystem(new ResourceManager(_engineSystems));
             _engineSystems.AddSystem(new EntityManager(_engineSystems));
             _engineSystems.AddSystem(new WorldManager(_engineSystems));
-            _engineSystems.AddSystem(new RenderManager(_engineSystems));
             _engineSystems.AddSystem(new WindowManager(_engineSystems));
+            _engineSystems.AddSystem(new RenderManager(_engineSystems));
+            _engineSystems.AddSystem(new OpenGLRendererCore(_engineSystems));
 
             _windowManager = _engineSystems.GetSystem<WindowManager>();
             _windowManager.NewWindow(width, height, title);
@@ -53,7 +55,6 @@ namespace Engine.Core
         {
             _engineSystems.GetSystem<RenderManager>().Render();
             _windowManager.GetActiveWindow().Title = $"{_windowManager.Title} - Render time: {e.Time * 1000:F2}ms - Framerate: {_windowManager.GetActiveWindow().RenderFrequency:F2}";
-            _windowManager.GetActiveWindow().SwapBuffers();
         }
 
 

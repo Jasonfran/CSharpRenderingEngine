@@ -153,14 +153,14 @@
   <ItemGroup>
     <Compile Include="Application.cs" />
     <Compile Include="Component\BaseComponent.cs" />
-    <Compile Include="Component\ModelComponent.cs" />
+    <Compile Include="Component\RenderableComponent.cs" />
     <Compile Include="Entity\IEntityReciever.cs" />
     <Compile Include="Entity\Transform.cs" />
     <Compile Include="Game\Game.cs" />
     <Compile Include="Game\GameSystemCollection.cs" />
     <Compile Include="Game\MyGame.cs" />
     <Compile Include="Renderer\BufferPointer.cs" />
-    <Compile Include="Renderer\RenderManager.cs" />
+    <Compile Include="Renderer\OpenGLRendererCore.cs" />
     <Compile Include="System\ISystem.cs" />
     <Compile Include="WindowManager.cs" />
     <Compile Include="World\World.cs" />
@@ -172,14 +172,13 @@
     <Compile Include="Core\IEngineSystem.cs" />
     <Compile Include="OpenGLRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RenderCommand.cs" />
     <Compile Include="Renderer\Material.cs" />
     <Compile Include="Renderer\Mesh.cs" />
     <Compile Include="Renderer\Model.cs" />
     <Compile Include="Renderer\Shader.cs" />
     <Compile Include="Renderer\Texture2D.cs" />
     <Compile Include="Renderer\Vertex.cs" />
-    <Compile Include="System\RenderSystem.cs" />
+    <Compile Include="System\RenderManager.cs" />
     <Compile Include="Resources\IResourceManager.cs" />
     <Compile Include="Resources\ResourceManager.cs" />
     <Compile Include="World\IWorldManager.cs" />
