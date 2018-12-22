@@ -19,6 +19,7 @@ namespace Engine.Entity
             public Entity(int id, EntityManager entityManager)
             {
                 _entityManager = entityManager;
+                Children = new List<Entity>();
                 Transform = new Transform();
                 Id = id;
             }

@@ -40,5 +40,46 @@ namespace Engine.Renderer
             var location = GL.GetUniformLocation(ProgramId, name);
             GL.Uniform1(location, value);
         }
+
+        public void SetMaterial(string name, Material material)
+        {
+            var textureUnitCounter = 0;
+            if (material.AmbientTexture != null)
+            {
+                var textureUnit = textureUnitCounter++;
+                GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
+                GL.BindTexture(TextureTarget.Texture2D, material.AmbientTexture.TextureId);
+                SetInt($"{name}.ambientTexture", textureUnit);
+                SetInt($"{name}.hasAmbientTexture", 1);
+            }
+            else
+            {
+                SetVec3($"{name}.ambientColor", new Vector3(material.AmbientColor));
+                SetInt($"{name}.hasAmbientTexture", 0);
+            }
+
+            if (material.DiffuseTexture != null)
+            {
+                var textureUnit = textureUnitCounter++;
+                GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
+                GL.BindTexture(TextureTarget.Texture2D, material.DiffuseTexture.TextureId);
+                SetInt($"{name}.diffuseTexture", textureUnit);
+                SetInt($"{name}.hasDiffuseTexture", 1);
+            }
+            else
+            {
+                SetVec3($"{name}.diffuseColor", new Vector3(material.DiffuseColor));
+                SetInt($"{name}.hasDiffuseTexture", 0);
+            }
+
+            if (material.SpecularTexture != null)
+            {
+                var textureUnit = textureUnitCounter++;
+                GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
+                GL.BindTexture(TextureTarget.Texture2D, material.SpecularTexture.TextureId);
+                SetInt($"{name}.specularTexture", textureUnit);
+                SetInt($"{name}.hasSpecularTexture", 1);
+            }
+        }
     }
 }

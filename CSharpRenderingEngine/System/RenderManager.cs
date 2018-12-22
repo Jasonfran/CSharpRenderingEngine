@@ -46,6 +46,13 @@ namespace Engine.System
 
         public void Render()
         {
+            var activeWorld = _worldManager.ActiveWorld;
+            var activeCamera = activeWorld.ActiveCamera;
+
+            _openGlRenderer.SetView(activeCamera.GetViewMatrix());
+
+            _openGlRenderer.UpdateLights(activeWorld.Lights);
+
             _openGlRenderer.FrameBegin();
             foreach (var entity in _renderableEntities)
             {

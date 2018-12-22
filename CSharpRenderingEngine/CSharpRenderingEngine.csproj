@@ -152,14 +152,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application.cs" />
+    <Compile Include="CameraManager.cs" />
     <Compile Include="Component\BaseComponent.cs" />
     <Compile Include="Component\RenderableComponent.cs" />
+    <Compile Include="Core\TransformManager.cs" />
+    <Compile Include="Entity\Camera.cs" />
     <Compile Include="Entity\IEntityReciever.cs" />
     <Compile Include="Entity\Transform.cs" />
     <Compile Include="Game\Game.cs" />
     <Compile Include="Game\GameSystemCollection.cs" />
     <Compile Include="Game\MyGame.cs" />
-    <Compile Include="Renderer\BufferPointer.cs" />
+    <Compile Include="Input\InputManager.cs" />
+    <Compile Include="Input\MouseData.cs" />
+    <Compile Include="Lighting\Light.cs" />
+    <Compile Include="Lighting\LightDataMapper.cs" />
+    <Compile Include="Lighting\PointLight.cs" />
+    <Compile Include="Renderer\MeshDataPointer.cs" />
     <Compile Include="Renderer\OpenGLRendererCore.cs" />
     <Compile Include="System\ISystem.cs" />
     <Compile Include="WindowManager.cs" />

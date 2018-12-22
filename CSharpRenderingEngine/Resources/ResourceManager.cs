@@ -171,7 +171,11 @@ namespace Engine.Resources
             var material = new Material();
             if (mat.HasTextureAmbient)
             {
-                material.AmbientTexture = LoadTexture(mat.TextureAmbient.FilePath);
+                var texture = LoadTexture(mat.TextureAmbient.FilePath);
+                if (texture != null)
+                {
+                    material.AmbientTexture = texture;
+                }
             }
             else if (mat.HasColorAmbient)
             {
@@ -180,7 +184,11 @@ namespace Engine.Resources
 
             if (mat.HasTextureDiffuse)
             {
-                material.DiffuseTexture = LoadTexture(mat.TextureDiffuse.FilePath);
+                var texture = LoadTexture(mat.TextureDiffuse.FilePath);
+                if (texture != null)
+                {
+                    material.DiffuseTexture = texture;
+                }
             }
             else if (mat.HasColorDiffuse)
             {
@@ -189,7 +197,11 @@ namespace Engine.Resources
 
             if (mat.HasTextureSpecular)
             {
-                material.SpecularTexture = LoadTexture(mat.TextureSpecular.FilePath);
+                var texture = LoadTexture(mat.TextureSpecular.FilePath);
+                if (texture != null)
+                {
+                    material.SpecularTexture = texture;
+                }
             }
 
             if (mat.HasColorSpecular)
@@ -206,60 +218,41 @@ namespace Engine.Resources
             var texture = new Texture2D();
 
             filePath = Path.Combine(rootFolder, modelFolder, Path.GetFileName(filePath));
-            var image = Image.Load(filePath);
-            byte[] data;
-            using (var memoryStream = new MemoryStream())
+            try
             {
-                image.Save(memoryStream, new BmpEncoder());
-                data = memoryStream.ToArray();
+                var image = Image.Load(filePath);
+
+                byte[] data;
+                using (var memoryStream = new MemoryStream())
+                {
+                    image.Save(memoryStream, new BmpEncoder());
+                    data = memoryStream.ToArray();
+                }
+
+                texture.Path = filePath;
+                texture.TextureId = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, texture.TextureId);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, image.Width, image.Height, 0,
+                    PixelFormat.Bgr, PixelType.UnsignedByte, data);
+
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS,
+                    (int) OpenTK.Graphics.OpenGL4.TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT,
+                    (int) OpenTK.Graphics.OpenGL4.TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
+                    (int) OpenTK.Graphics.OpenGL4.TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
+                    (int) OpenTK.Graphics.OpenGL4.TextureMagFilter.Linear);
+
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+                return texture;
+            }
+            catch (FileNotFoundException exception)
+            {
+                Console.WriteLine($"Couldn't find file: {filePath}");
             }
 
-            texture.Path = filePath;
-            texture.TextureId = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, texture.TextureId);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, image.Width, image.Height, 0, PixelFormat.Bgr, PixelType.UnsignedByte, data);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)OpenTK.Graphics.OpenGL4.TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)OpenTK.Graphics.OpenGL4.TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)OpenTK.Graphics.OpenGL4.TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)OpenTK.Graphics.OpenGL4.TextureMagFilter.Linear);
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-            return texture;
-        }
-
-        public void SetupModel(Model model)
-        {
-
-            foreach (var mesh in model.Meshes)
-            {
-                var vao = GL.GenVertexArray();
-                //mesh.VAO = vao;
-                var vbo = GL.GenBuffer();
-                var ebo = GL.GenBuffer();
-
-                GL.BindVertexArray(vao);
-                GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-                GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(mesh.Vertices.Count * Vertex.Stride),
-                    mesh.Vertices.ToArray(), BufferUsageHint.StaticDraw);
-
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
-                GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(mesh.Indices.Count * sizeof(uint)),
-                    mesh.Indices.ToArray(), BufferUsageHint.StaticDraw);
-
-                GL.EnableVertexAttribArray(0);
-                GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, Vertex.Stride, 0);
-
-                GL.EnableVertexAttribArray(1);
-                GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, Vertex.Stride,
-                    Marshal.OffsetOf(typeof(Vertex), "Normal"));
-
-                GL.EnableVertexAttribArray(2);
-                GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, Vertex.Stride,
-                    Marshal.OffsetOf(typeof(Vertex), "TexCoords"));
-
-                GL.BindVertexArray(0);
-            }
+            return null;
         }
     }
 }

@@ -6,6 +6,5 @@ namespace Engine.Resources
     {
         Shader LoadShader(string vertex, string fragment);
         Model LoadModel(string filePath);
-        void SetupModel(Model model);
     }
 }
