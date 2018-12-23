@@ -167,6 +167,7 @@
     <Compile Include="Lighting\Light.cs" />
     <Compile Include="Lighting\LightDataMapper.cs" />
     <Compile Include="Lighting\PointLight.cs" />
+    <Compile Include="Renderer\Line3D.cs" />
     <Compile Include="Renderer\MeshDataPointer.cs" />
     <Compile Include="Renderer\OpenGLRendererCore.cs" />
     <Compile Include="System\ISystem.cs" />
@@ -201,6 +202,8 @@
     <None Include="Assets\Models\cube.obj" />
     <None Include="Assets\Models\machida_madoka.mtl" />
     <None Include="Assets\Models\machida_madoka.obj" />
+    <None Include="Assets\Shaders\debug.frag" />
+    <None Include="Assets\Shaders\debug.vert" />
     <None Include="Assets\Shaders\Main.frag" />
     <None Include="Assets\Shaders\Main.vert" />
     <None Include="OpenTK.dll.config" />

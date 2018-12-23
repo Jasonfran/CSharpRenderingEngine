@@ -9,6 +9,7 @@ namespace Engine.Renderer
     {
         public Vector3 Position;
         public Vector3 Normal;
+        public Vector3 Color;
         public Vector2 TexCoords;
 
         public static readonly int Stride = Marshal.SizeOf(default(Vertex));

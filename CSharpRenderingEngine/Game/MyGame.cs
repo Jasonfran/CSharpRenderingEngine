@@ -20,6 +20,7 @@ namespace Engine.Game
         private InputManager _inputManager;
 
         private Light light;
+        private EntityManager.Entity entity;
 
 
         public MyGame(EngineSystemsCollection engineSystems, GameSystemCollection gameSystems) : base(engineSystems, gameSystems)
@@ -39,22 +40,22 @@ namespace Engine.Game
             var world = _worldManager.NewWorld();
             _worldManager.SetActiveWorld(world);
 
-            var entity = _entityManager.NewEntity();
+            entity = _entityManager.NewEntity();
             entity.AddComponent(new RenderableComponent(_resourceManager.LoadModel("Models/2b.obj")));
             world.AddChild(entity);
 
-            entity.Transform.Scale = new Vector3(0.3f, 0.3f, 0.3f);
+            entity.Transform.Scale = new Vector3(0.1f, 0.1f, 0.1f);
 
-            var camera = world.AddCamera(new Camera(new Vector3(0.0f, 0.0f, -50.0f)));
+            var camera = world.AddCamera(new Camera(new Vector3(0.0f, 0.0f, -1.0f)));
             world.SetActiveCamera(camera);
 
             light = world.AddLight(new PointLight(new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f), Vector3.One));
-            
+            light.Transform.Position = new Vector3(5.0f, 5.0f, 5.0f);
         }
 
         public override void Update(float dt)
         {
-            light.Transform.Position = _worldManager.ActiveWorld.ActiveCamera.Transform.Position;
+            entity.Transform.EularRotation = new Vector3(entity.Transform.EularRotation.X, entity.Transform.EularRotation.Y + 10.0f * dt, entity.Transform.EularRotation.Z);
         }
     }
 }

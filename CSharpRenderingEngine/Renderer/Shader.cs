@@ -41,6 +41,12 @@ namespace Engine.Renderer
             GL.Uniform1(location, value);
         }
 
+        public void SetFloat(string name, float value)
+        {
+            var location = GL.GetUniformLocation(ProgramId, name);
+            GL.Uniform1(location, value);
+        }
+
         public void SetMaterial(string name, Material material)
         {
             var textureUnitCounter = 0;

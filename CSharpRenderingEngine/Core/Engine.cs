@@ -18,6 +18,7 @@ namespace Engine.Core
         private readonly EngineSystemsCollection _engineSystems;
         private WindowManager _windowManager;
         private InputManager _inputManager;
+        private RenderManager _renderManager;
 
         public Engine()
         {
@@ -47,6 +48,8 @@ namespace Engine.Core
             InitSystems(width, height, title);
 
             _inputManager = _engineSystems.GetSystem<InputManager>();
+
+            _renderManager = _engineSystems.GetSystem<RenderManager>();
 
             _windowManager.GetActiveWindow().TargetRenderFrequency = 60.0;
             _windowManager.GetActiveWindow().TargetUpdateFrequency = 60.0;
@@ -80,6 +83,12 @@ namespace Engine.Core
                 _windowManager.GetActiveWindow().CursorVisible = !_windowManager.GetActiveWindow().CursorVisible;
                 _inputManager.CaptureMouse = !_inputManager.CaptureMouse;
             }
+
+            if (_inputManager.KeyPressed(Key.F3))
+            {
+                _renderManager.Debug = !_renderManager.Debug;
+            }
+
             _inputManager.Update();
         }
 

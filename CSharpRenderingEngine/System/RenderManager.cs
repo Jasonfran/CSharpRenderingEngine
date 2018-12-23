@@ -18,6 +18,8 @@ namespace Engine.System
         private List<EntityManager.Entity> _renderableEntities;
         private EntityManager _entityManager;
 
+        public bool Debug { get; set; } = true;
+
         public RenderManager(EngineSystemsCollection engineSystems) : base(engineSystems)
         {
             _engineSystems = engineSystems;
@@ -46,6 +48,8 @@ namespace Engine.System
 
         public void Render()
         {
+            _openGlRenderer.DebugMode = Debug;
+
             var activeWorld = _worldManager.ActiveWorld;
             var activeCamera = activeWorld.ActiveCamera;
 
@@ -62,6 +66,7 @@ namespace Engine.System
                 var renderableComponent = entity.GetComponent<RenderableComponent>();
                 _openGlRenderer.RenderModel(renderableComponent.Model, entity.Transform.ModelMatrix);
             }
+
             _openGlRenderer.FrameEnd();
         }
 

@@ -9,17 +9,22 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 mvp;
 
+uniform float linewidth;
+
 out VS_OUT {
 
-	vec2 texCoords;
 	vec3 normal;
 	vec3 fragPos;
-
+	vec3 color;
 } vs_out;
 
 void main(){
-	gl_Position = mvp * vec4(position, 1.0);
 	vs_out.fragPos = vec3(model * vec4(position, 1.0));
 	vs_out.normal = mat3(transpose(inverse(model))) * normal;
-	vs_out.texCoords = texCoords;
+	vs_out.color = color;
+
+	vec4 delta = vec4(normal * linewidth, 0);
+	vec4 pos = view * model * vec4(position, 1.0f);
+
+	gl_Position = projection * (pos + delta);
 }

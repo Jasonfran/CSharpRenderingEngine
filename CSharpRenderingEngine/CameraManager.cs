@@ -34,32 +34,32 @@ namespace Engine
 
             if (_inputManager.KeyDown(Key.W))
             {
-                transform.Position += transform.Front;
+                transform.Position += transform.Front * dt;
             }
 
             if (_inputManager.KeyDown(Key.S))
             {
-                transform.Position -= transform.Front;
+                transform.Position -= transform.Front * dt;
             }
 
             if (_inputManager.KeyDown(Key.A))
             {
-                transform.Position -= transform.Right;
+                transform.Position -= transform.Right * dt;
             }
 
             if (_inputManager.KeyDown(Key.D))
             {
-                transform.Position += transform.Right;
+                transform.Position += transform.Right * dt;
             }
 
             if (_inputManager.KeyDown(Key.Space))
             {
-                transform.Position += Vector3.UnitY;
+                transform.Position += Vector3.UnitY * dt;
             }
 
             if (_inputManager.KeyDown(Key.ControlLeft))
             {
-                transform.Position -= Vector3.UnitY;
+                transform.Position -= Vector3.UnitY * dt;
             }
 
             if (_inputManager.CaptureMouse)
