@@ -8,6 +8,7 @@ using Engine.Resources;
 using Engine.System;
 using Engine.World;
 using OpenTK;
+using OpenTK.Graphics;
 using OpenTK.Input;
 
 namespace Engine.Game
@@ -19,7 +20,7 @@ namespace Engine.Game
         private ResourceManager _resourceManager;
         private InputManager _inputManager;
 
-        private Light light;
+        private ILight light;
         private EntityManager.Entity entity;
 
 
@@ -49,7 +50,7 @@ namespace Engine.Game
             var camera = world.AddCamera(new Camera(new Vector3(0.0f, 0.0f, -1.0f)));
             world.SetActiveCamera(camera);
 
-            light = world.AddLight(new PointLight(new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f), Vector3.One));
+            light = world.AddPointLight(new PointLight(new Color4(1.0f, 1.0f, 1.0f, 1.0f), new Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4.White));
             light.Transform.Position = new Vector3(5.0f, 5.0f, 5.0f);
         }
 

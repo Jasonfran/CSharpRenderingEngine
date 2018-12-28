@@ -10,14 +10,14 @@ namespace Engine.World
         public List<EntityManager.Entity> ChildEntities { get; }
         public List<Camera> Cameras { get; }
         public Camera ActiveCamera { get; private set; }
-        public List<Light> Lights { get; }
+        public List<PointLight> PointLights { get; }
 
 
         public World()
         {
             ChildEntities = new List<EntityManager.Entity>();
             Cameras = new List<Camera>();
-            Lights = new List<Light>();
+            PointLights = new List<PointLight>();
         }
 
         public void AddChild(EntityManager.Entity entity)
@@ -44,11 +44,11 @@ namespace Engine.World
             ActiveCamera = camera;
         }
 
-        public Light AddLight(Light light)
+        public PointLight AddPointLight(PointLight light)
         {
-            if (!Lights.Contains(light))
+            if (!PointLights.Contains(light))
             {
-                Lights.Add(light);
+                PointLights.Add(light);
             }
             return light;
         }

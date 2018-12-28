@@ -24,6 +24,8 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -33,6 +35,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AssimpNet, Version=4.1.0.0, Culture=neutral, PublicKeyToken=0d51b391f59f42a6, processorArchitecture=MSIL">
@@ -155,7 +158,9 @@
     <Compile Include="CameraManager.cs" />
     <Compile Include="Component\BaseComponent.cs" />
     <Compile Include="Component\RenderableComponent.cs" />
+    <Compile Include="Core\ArrayBuffer.cs" />
     <Compile Include="Core\TransformManager.cs" />
+    <Compile Include="Core\UniformBuffer.cs" />
     <Compile Include="Entity\Camera.cs" />
     <Compile Include="Entity\IEntityReciever.cs" />
     <Compile Include="Entity\Transform.cs" />
@@ -164,12 +169,21 @@
     <Compile Include="Game\MyGame.cs" />
     <Compile Include="Input\InputManager.cs" />
     <Compile Include="Input\MouseData.cs" />
-    <Compile Include="Lighting\Light.cs" />
+    <Compile Include="Lighting\CompletePointLightData.cs" />
+    <Compile Include="Lighting\ILight.cs" />
+    <Compile Include="Lighting\ILightData.cs" />
+    <Compile Include="Lighting\LightAdditionalInfo.cs" />
+    <Compile Include="Lighting\LightDataContainer.cs" />
     <Compile Include="Lighting\LightDataMapper.cs" />
     <Compile Include="Lighting\PointLight.cs" />
+    <Compile Include="Lighting\PointLightData.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="Renderer\DrawElementsBaseVertexCommand.cs" />
+    <Compile Include="Renderer\IRenderCommand.cs" />
     <Compile Include="Renderer\Line3D.cs" />
     <Compile Include="Renderer\MeshDataPointer.cs" />
     <Compile Include="Renderer\OpenGLRendererCore.cs" />
+    <Compile Include="Renderer\RenderCommandType.cs" />
     <Compile Include="System\ISystem.cs" />
     <Compile Include="WindowManager.cs" />
     <Compile Include="World\World.cs" />

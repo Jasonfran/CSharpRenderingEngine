@@ -6,7 +6,6 @@ namespace Engine.Component
     {
         public Model Model { get; }
 
-
         public RenderableComponent(Model model)
         {
             Model = model;

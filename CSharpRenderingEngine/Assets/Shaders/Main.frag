@@ -18,9 +18,12 @@ struct Material {
 
 struct Light{
 	vec3 position;
-	vec3 ambientColor;
-	vec3 diffuseColor;
-	vec3 specularColor;
+	vec4 ambientColor;
+	vec4 diffuseColor;
+	vec4 specularColor;
+	float constant;
+	float linear;
+	float quadratic;
 };
   
 layout (std140) uniform Lights
@@ -50,7 +53,7 @@ void main(){
 		float diff = max(dot(norm, lightDir), 0.0);
 
 		vec3 ambient = vec3(texture(material.ambientTexture, fs_in.texCoords)) * ambientLightStrength;
-		vec3 diffuse = diff * light[0].diffuseColor;
+		vec3 diffuse = diff * light[0].diffuseColor.xyz;
 		vec3 result = (ambient + diffuse) * vec3(texture(material.diffuseTexture, fs_in.texCoords)); 
 
 		FragColor = vec4(result, 1.0f);

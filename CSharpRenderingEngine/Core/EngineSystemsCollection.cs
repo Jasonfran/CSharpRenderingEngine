@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Engine.Core
 {
@@ -13,7 +14,13 @@ namespace Engine.Core
 
         public void AddSystem<T>(T system) where T : IEngineSystem
         {
-            _systems.Add(typeof(T).ToString(), system);
+            if (!_systems.ContainsKey(typeof(T).Name))
+            {
+                _systems.Add(typeof(T).ToString(), system);
+                return;
+            }
+
+            throw new Exception($"{typeof(T).Name} is already added as a system!");
         }
 
         public T GetSystem<T>() where T : IEngineSystem
@@ -25,7 +32,7 @@ namespace Engine.Core
                 return (T) system;
             }
 
-            return default(T);
+            throw new Exception($"{typeof(T).Name} is not added as a system!");
         }
 
         public void InitAll()

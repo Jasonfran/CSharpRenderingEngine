@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Assimp.Configs;
 using Engine.Core;
+using Engine.Entity;
 using Engine.Lighting;
 using Engine.Resources;
 using Engine.World;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL4;
+using Buffer = System.Buffer;
 
 namespace Engine.Renderer
 {
     public class OpenGLRendererCore : EngineSystem
     {
-        private readonly EngineSystemsCollection _engineSystems;
         private WorldManager _worldManager;
         private WindowManager _windowManager;
 
@@ -34,9 +35,9 @@ namespace Engine.Renderer
         private int _vboDebug;
 
         private int _vao;
-        private int _vboVertex;
+        private ArrayBuffer vertexBuffer;
         private int _eboIndices;
-        private int _uboLights;
+        private UniformBuffer lightsBuffer;
 
         private ResourceManager _resourceManager;
 
@@ -47,25 +48,35 @@ namespace Engine.Renderer
         private Matrix4 projection;
 
         public bool DebugMode = true;
+        private Logger _logger;
+
+        // Render command stuff
+
+        private Dictionary<RenderCommandType, Stack<IRenderCommand>> _commandPool;
+        private Stack<IRenderCommand> _renderCommands;
+
+        private IntPtr _lightDataPtr;
 
         public OpenGLRendererCore(EngineSystemsCollection engineSystems) : base(engineSystems)
         {
-            _engineSystems = engineSystems;
-
             _lightDataMapper = new LightDataMapper();
 
             _bufferDataPointers = new Dictionary<string, List<MeshDataPointer>>();
             _debugDataPointers = new Dictionary<string, List<MeshDataPointer>>();
             _vertices = new List<Vertex>();
             _indices = new List<uint>();
+
+            _commandPool = new Dictionary<RenderCommandType, Stack<IRenderCommand>>();
+            _renderCommands = new Stack<IRenderCommand>();
         }
 
         public override void Init()
         {
-            _windowManager = _engineSystems.GetSystem<WindowManager>();
+            _logger = EngineSystems.GetSystem<Logger>();
+            _windowManager = EngineSystems.GetSystem<WindowManager>();
             _windowManager.GetActiveWindow().MakeCurrent();
 
-            _resourceManager = _engineSystems.GetSystem<ResourceManager>();
+            _resourceManager = EngineSystems.GetSystem<ResourceManager>();
 
             GL.Viewport(0, 0, _windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
             GL.Enable(EnableCap.DepthTest);
@@ -86,6 +97,8 @@ namespace Engine.Renderer
             view = Matrix4.CreateTranslation(0.0f, 0.0f, 0.0f);
             projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(75.0f),
                 (float)_windowManager.GetActiveWindow().Width / (float)_windowManager.GetActiveWindow().Height, 1.0f, 1000.0f);
+
+            LoadModelData(_resourceManager.LoadModel("Models/2b.obj"));
         }
 
         private void CreateDebugVertexBuffer()
@@ -154,70 +167,40 @@ namespace Engine.Renderer
         private void CreateVertexDataBuffers()
         {
             _vao = GL.GenVertexArray();
-            _vboVertex = GL.GenBuffer();
-            _eboIndices = GL.GenBuffer();
-
             GL.BindVertexArray(_vao);
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboVertex);
-            GL.BufferData(BufferTarget.ArrayBuffer, _initialBufferSize, IntPtr.Zero, BufferUsageHint.StaticDraw);
+            vertexBuffer = new ArrayBuffer(GL.GenBuffer(), _initialBufferSize, BufferUsageHint.StaticDraw);
+            vertexBuffer.EnableVertexAttrib(0, 3, VertexAttribPointerType.Float, false, Vertex.Stride, 0);
+            vertexBuffer.EnableVertexAttrib(1, 3, VertexAttribPointerType.Float, false, Vertex.Stride, Marshal.OffsetOf(typeof(Vertex), "Normal"));
+            vertexBuffer.EnableVertexAttrib(2, 3, VertexAttribPointerType.Float, false, Vertex.Stride, Marshal.OffsetOf(typeof(Vertex), "Color"));
+            vertexBuffer.EnableVertexAttrib(3, 3, VertexAttribPointerType.Float, false, Vertex.Stride, Marshal.OffsetOf(typeof(Vertex), "TexCoords"));
 
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, Vertex.Stride, 0);
+            vertexBuffer.Unbind();
 
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, Vertex.Stride,
-                Marshal.OffsetOf(typeof(Vertex), "Normal"));
-
-            GL.EnableVertexAttribArray(2);
-            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, Vertex.Stride,
-                Marshal.OffsetOf(typeof(Vertex), "Color"));
-
-            GL.EnableVertexAttribArray(3);
-            GL.VertexAttribPointer(3, 2, VertexAttribPointerType.Float, false, Vertex.Stride,
-                Marshal.OffsetOf(typeof(Vertex), "TexCoords"));
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-
+            _eboIndices = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _eboIndices);
             GL.BufferData(BufferTarget.ElementArrayBuffer, _initialBufferSize, IntPtr.Zero, BufferUsageHint.StaticDraw);
         }
 
         private void CreateLightUniformBuffer(int bufferIndex)
         {
-            _uboLights = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.UniformBuffer, _uboLights);
-
             // two ints + lights. two ints padded to 16 bytes
             var size = 16 + 1024;
-
-            GL.BufferData(BufferTarget.UniformBuffer, size, new IntPtr(), BufferUsageHint.DynamicDraw);
-            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, bufferIndex, _uboLights);
+            lightsBuffer = new UniformBuffer(GL.GenBuffer(), size, BufferUsageHint.DynamicDraw);
+            lightsBuffer.SetBufferIndex(bufferIndex);
         }
 
-        public void UpdateLights(List<Light> lights)
+        public void UpdatePointLights(List<PointLight> lights)
         {
-            var allLightData = new List<float>();
+            var lightData = _lightDataMapper.GetPointLightData(lights, maxNumOfPointLights);
 
-            allLightData.Add(lights.Count);
-            allLightData.Add(maxNumOfPointLights);
-            allLightData.Add(0);
-            allLightData.Add(0);
-
-            var bufferSize = 16;
-
-            foreach (var light in lights)
+            if (lightsBuffer.Size < lightData.TotalSizeInBytes)
             {
-                var data = _lightDataMapper.GetData(light);
-
-                bufferSize += sizeof(float) * data.Length;
-
-                allLightData.AddRange(data);
+                lightsBuffer.Resize(lightData.TotalSizeInBytes);
             }
 
-            var lightCount = new IntPtr(lights.Count);
-
-            GL.BufferSubData(BufferTarget.UniformBuffer, IntPtr.Zero, bufferSize, allLightData.ToArray());
+            lightsBuffer.UpdateData(0, Marshal.SizeOf<LightAdditionalInfo>(), ref lightData.AdditionalInfo);
+            lightsBuffer.UpdateData(Marshal.OffsetOf(typeof(CompletePointLightData), "LightData").ToInt32(), Marshal.SizeOf<PointLightData>() * lightData.LightData.Length, lightData.LightData);
         }
 
         public void SetView(Matrix4 viewMatrix)
@@ -241,14 +224,15 @@ namespace Engine.Renderer
                 _bufferDataPointers[name].Add(new MeshDataPointer(baseIndex, mesh.Indices.Count, mesh.Material));
             }
 
-            GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Count * Vertex.Stride, _vertices.ToArray(), BufferUsageHint.StaticDraw);
+            vertexBuffer.SetData(_vertices.Count * Vertex.Stride, _vertices.ToArray());
+
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Count * sizeof(uint), _indices.ToArray(),
                 BufferUsageHint.StaticDraw);
 
-            Console.WriteLine($"Loaded {model.Path} into VBO");
+            _logger.Info($"Loaded {model.Path} into VBO");
         }
 
-        public void RenderModel(Model model, Matrix4 modelMatrix)
+        public void RenderModel(Model model, Transform transform)
         {
             if (!_bufferDataPointers.ContainsKey(model.Path))
             {
@@ -260,18 +244,72 @@ namespace Engine.Renderer
                 foreach (var pointer in pointers)
                 {
                     testShader.SetMaterial("material", pointer.MeshMaterial);
-                    testShader.SetMat4("model", modelMatrix);
+                    testShader.SetMat4("model", transform.ModelMatrix);
                     testShader.SetMat4("view", view);
                     testShader.SetMat4("projection", projection);
-                    testShader.SetMat4("mvp", modelMatrix * view * projection);
+                    testShader.SetMat4("mvp", transform.ModelMatrix * view * projection);
 
                     GL.DrawElementsBaseVertex(PrimitiveType.Triangles, pointer.Count, DrawElementsType.UnsignedInt, (IntPtr)0, pointer.Start);
+
+                    DrawElementsBaseVertexCommand command;
+                    if (_commandPool.ContainsKey(RenderCommandType.RenderMesh))
+                    {
+                        if (_commandPool[RenderCommandType.RenderMesh].Count > 0)
+                        {
+                            command = (DrawElementsBaseVertexCommand)_commandPool[RenderCommandType.RenderMesh].Pop();
+                            command.Repackage(pointer, transform, testShader);
+                        }
+                        else
+                        {
+                            command = new DrawElementsBaseVertexCommand(pointer, transform, testShader);
+                            _logger.Warn("Created new render command");
+                        }
+                    }
+                    else
+                    {
+                        command = new DrawElementsBaseVertexCommand(pointer, transform, testShader);
+                        _logger.Warn("Created new render command");
+                    }
+
+                    _renderCommands.Push(command);
+
                 }
             }
 
             if (DebugMode)
             {
-                RenderDebugAxis(modelMatrix, 0.1f);
+                RenderDebugAxis(transform.ModelMatrix, 0.1f);
+            }
+        }
+
+        public void ProcessRenderCommands()
+        {
+            while (_renderCommands.Count > 0)
+            {
+                var c = _renderCommands.Pop();
+                if (c.Type == RenderCommandType.RenderMesh)
+                {
+                    var command = (DrawElementsBaseVertexCommand) c;
+                    command.Shader.Use();
+                    testShader.SetMaterial("material", command.DataPointer.MeshMaterial);
+                    testShader.SetMat4("model", command.Transform.ModelMatrix);
+                    testShader.SetMat4("view", view);
+                    testShader.SetMat4("projection", projection);
+                    testShader.SetMat4("mvp", command.Transform.ModelMatrix * view * projection);
+
+                    GL.DrawElementsBaseVertex(PrimitiveType.Triangles, command.DataPointer.Count, DrawElementsType.UnsignedInt,
+                        (IntPtr) 0, command.DataPointer.Start);
+
+                    if (_commandPool.ContainsKey(command.Type))
+                    {
+                        _commandPool[command.Type].Push(command);
+                    }
+                    else
+                    {
+                        _commandPool.Add(command.Type, new Stack<IRenderCommand>());
+                        _commandPool[command.Type].Push(command);
+                    }
+                }
             }
         }
 
@@ -299,7 +337,6 @@ namespace Engine.Renderer
             GL.ClearColor(Color4.Black);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.BindVertexArray(_vao);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboVertex);
             testShader.Use();
         }
 

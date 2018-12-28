@@ -16,20 +16,20 @@ namespace Engine.Resources
 {
     public class ResourceManager : EngineSystem, IResourceManager
     {
-        private readonly EngineSystemsCollection _engineSystems;
         private Dictionary<string, Model> _loadedModels = new Dictionary<string, Model>();
         private Dictionary<string, Shader> _loadedShaders = new Dictionary<string, Shader>();
 
         private string rootFolder = "Assets";
         private string modelFolder = "Models";
+        private Logger _logger;
 
         public ResourceManager(EngineSystemsCollection engineSystems) : base(engineSystems)
         {
-            _engineSystems = engineSystems;
         }
 
         public override void Init()
         {
+            _logger = EngineSystems.GetSystem<Logger>();
         }
 
         public Shader LoadShader(string vertex, string fragment)
@@ -53,8 +53,8 @@ namespace Engine.Resources
             if (vertexCompileSuccess == 0)
             {
                 var infoLog = GL.GetShaderInfoLog(vertexShader);
-                Console.WriteLine("Error: Vertex shader compilation failed!");
-                Console.WriteLine(infoLog);
+                _logger.Error("Error: Vertex shader compilation failed!");
+                _logger.Info(infoLog);
             }
 
             GL.ShaderSource(fragmentShader, fragmentShaderCode);
@@ -63,8 +63,8 @@ namespace Engine.Resources
             if (fragmentCompileSuccess == 0)
             {
                 var infoLog = GL.GetShaderInfoLog(fragmentShader);
-                Console.WriteLine("Error: Fragment shader compilation failed!");
-                Console.WriteLine(infoLog);
+                _logger.Error("Error: Fragment shader compilation failed!");
+                _logger.Info(infoLog);
             }
 
             var program = GL.CreateProgram();
@@ -76,8 +76,8 @@ namespace Engine.Resources
             if (linkStatus == 0)
             {
                 var infoLog = GL.GetProgramInfoLog(program);
-                Console.WriteLine("Error: Program link failed!");
-                Console.WriteLine(infoLog);
+                _logger.Error("Error: Program link failed!");
+                _logger.Info(infoLog);
             }
 
             var completeShader = new Shader(program);
@@ -162,7 +162,7 @@ namespace Engine.Resources
                 material = LoadMaterial(scene.Materials[mesh.MaterialIndex]);
             }
 
-            Console.WriteLine("Loaded mesh: " + mesh.Name);
+            _logger.Info("Loaded mesh: " + mesh.Name);
             return new Mesh(vertices, indices, material);
         }
 
@@ -249,7 +249,7 @@ namespace Engine.Resources
             }
             catch (FileNotFoundException exception)
             {
-                Console.WriteLine($"Couldn't find file: {filePath}");
+                _logger.Error($"Couldn't find file: {filePath}");
             }
 
             return null;

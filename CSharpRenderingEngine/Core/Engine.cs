@@ -19,6 +19,9 @@ namespace Engine.Core
         private WindowManager _windowManager;
         private InputManager _inputManager;
         private RenderManager _renderManager;
+        private TransformManager _transformManager;
+
+        private GameWindow _activeWindow;
 
         public Engine()
         {
@@ -27,6 +30,7 @@ namespace Engine.Core
 
         private void InitSystems(int width, int height, string title)
         {
+            _engineSystems.AddSystem(new Logger(_engineSystems));
             _engineSystems.AddSystem(new InputManager(_engineSystems));
             _engineSystems.AddSystem(new ResourceManager(_engineSystems));
             _engineSystems.AddSystem(new EntityManager(_engineSystems));
@@ -51,20 +55,29 @@ namespace Engine.Core
 
             _renderManager = _engineSystems.GetSystem<RenderManager>();
 
-            _windowManager.GetActiveWindow().TargetRenderFrequency = 60.0;
-            _windowManager.GetActiveWindow().TargetUpdateFrequency = 60.0;
-            _windowManager.GetActiveWindow().UpdateFrame += WindowOnUpdateFrame;
-            _windowManager.GetActiveWindow().RenderFrame += WindowOnRenderFrame;
+            _transformManager = _engineSystems.GetSystem<TransformManager>();
 
-            _windowManager.GetActiveWindow().KeyDown += (sender, args) => { _inputManager.OnKeyDown(args); };
+            _renderManager = _engineSystems.GetSystem<RenderManager>();
 
-            _windowManager.GetActiveWindow().KeyUp += (sender, args) => { _inputManager.OnKeyUp(args); };
+            _activeWindow = _windowManager.GetActiveWindow();
 
-            _windowManager.GetActiveWindow().KeyPress += (sender, args) => { _inputManager.OnKeyPress(args); };
+            _activeWindow.TargetRenderFrequency = 60.0;
+            _activeWindow.TargetUpdateFrequency = 60.0;
+            _activeWindow.UpdateFrame += WindowOnUpdateFrame;
+            _activeWindow.RenderFrame += WindowOnRenderFrame;
 
-            _windowManager.GetActiveWindow().MouseMove += (sender, args) => { _inputManager.OnMouseMove(args); };
+            _activeWindow.KeyDown += (sender, args) => { _inputManager.OnKeyDown(args); };
 
-            _windowManager.GetActiveWindow().CursorVisible = false;
+            _activeWindow.KeyUp += (sender, args) => { _inputManager.OnKeyUp(args); };
+
+            _activeWindow.KeyPress += (sender, args) => { _inputManager.OnKeyPress(args); };
+
+            _activeWindow.MouseMove += (sender, args) => { _inputManager.OnMouseMove(args); };
+
+            _activeWindow.CursorVisible = false;
+
+            _activeWindow.TargetRenderFrequency = 500f;
+            _activeWindow.VSync = VSyncMode.Off;
         }
 
         private void WindowOnUpdateFrame(object sender, FrameEventArgs e)
@@ -75,12 +88,12 @@ namespace Engine.Core
 
             if (_inputManager.KeyPressed(Key.Escape))
             {
-                _windowManager.GetActiveWindow().Close();
+                _activeWindow.Close();
             }
 
             if (_inputManager.KeyPressed(Key.F2))
             {
-                _windowManager.GetActiveWindow().CursorVisible = !_windowManager.GetActiveWindow().CursorVisible;
+                _activeWindow.CursorVisible = !_activeWindow.CursorVisible;
                 _inputManager.CaptureMouse = !_inputManager.CaptureMouse;
             }
 
@@ -94,10 +107,10 @@ namespace Engine.Core
 
         private void WindowOnRenderFrame(object sender, FrameEventArgs e)
         {
-            _engineSystems.GetSystem<TransformManager>().UpdateCameraTransforms();
-            _engineSystems.GetSystem<TransformManager>().UpdateEntityTransforms();
-            _engineSystems.GetSystem<RenderManager>().Render();
-            _windowManager.GetActiveWindow().Title = $"{_windowManager.Title} - Render time: {e.Time * 1000:F2}ms - Framerate: {_windowManager.GetActiveWindow().RenderFrequency:F2}";
+            _transformManager.UpdateCameraTransforms();
+            _transformManager.UpdateEntityTransforms();
+            _renderManager.Render();
+            _activeWindow.Title = $"{_windowManager.Title} - Render time: {e.Time * 1000:F2}ms - Framerate: {_activeWindow.RenderFrequency:F2}";
         }
 
 
@@ -106,7 +119,7 @@ namespace Engine.Core
             _game = new MyGame(_engineSystems, new GameSystemCollection());
             _game.Init();
 
-            _windowManager.GetActiveWindow().Run();
+            _activeWindow.Run();
         }
     }
 }
