@@ -2,6 +2,7 @@
 {
     public enum RenderCommandType
     {
-        RenderMesh
+        RenderMesh,
+        RenderText
     }
 }

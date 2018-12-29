@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Engine.Component;
 using Engine.Core;
 using Engine.Entity;
@@ -63,6 +64,8 @@ namespace Engine.System
             }
 
             _openGlRenderer.ProcessRenderCommands();
+
+            _openGlRenderer.RenderText("Test", 100, 100, new Vector3(0.0f, 0.0f, 1.0f));
 
             _openGlRenderer.FrameEnd();
         }

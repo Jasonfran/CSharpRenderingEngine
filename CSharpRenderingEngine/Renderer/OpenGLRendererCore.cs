@@ -43,6 +43,7 @@ namespace Engine.Renderer
 
         private Shader testShader;
         private Shader debugShader;
+        private Shader textShader;
 
         private Matrix4 view;
         private Matrix4 projection;
@@ -52,10 +53,12 @@ namespace Engine.Renderer
 
         // Render command stuff
 
-        private Dictionary<RenderCommandType, Stack<IRenderCommand>> _commandPool;
-        private Stack<IRenderCommand> _renderCommands;
+        private Dictionary<RenderCommandType, Stack<RenderCommand>> _commandPool;
+        private Stack<RenderCommand> _renderCommands;
 
         private IntPtr _lightDataPtr;
+
+        private FontRenderer fontRenderer;
 
         public OpenGLRendererCore(EngineSystemsCollection engineSystems) : base(engineSystems)
         {
@@ -66,8 +69,9 @@ namespace Engine.Renderer
             _vertices = new List<Vertex>();
             _indices = new List<uint>();
 
-            _commandPool = new Dictionary<RenderCommandType, Stack<IRenderCommand>>();
-            _renderCommands = new Stack<IRenderCommand>();
+            _commandPool = new Dictionary<RenderCommandType, Stack<RenderCommand>>();
+            _renderCommands = new Stack<RenderCommand>();
+
         }
 
         public override void Init()
@@ -76,10 +80,14 @@ namespace Engine.Renderer
             _windowManager = EngineSystems.GetSystem<WindowManager>();
             _windowManager.GetActiveWindow().MakeCurrent();
 
+            fontRenderer = new FontRenderer(_windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
+
             _resourceManager = EngineSystems.GetSystem<ResourceManager>();
 
             GL.Viewport(0, 0, _windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
             GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.CullFace(CullFaceMode.Back);
 
             CreateDebugVertexBuffer();
@@ -93,6 +101,8 @@ namespace Engine.Renderer
             testShader.Use();
 
             debugShader = _resourceManager.LoadShader("Shaders/debug.vert", "Shaders/debug.frag");
+
+            textShader = _resourceManager.LoadShader("Shaders/Text.vert", "Shaders/Text.frag");
 
             view = Matrix4.CreateTranslation(0.0f, 0.0f, 0.0f);
             projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(75.0f),
@@ -249,30 +259,9 @@ namespace Engine.Renderer
                     testShader.SetMat4("projection", projection);
                     testShader.SetMat4("mvp", transform.ModelMatrix * view * projection);
 
-                    GL.DrawElementsBaseVertex(PrimitiveType.Triangles, pointer.Count, DrawElementsType.UnsignedInt, (IntPtr)0, pointer.Start);
-
-                    DrawElementsBaseVertexCommand command;
-                    if (_commandPool.ContainsKey(RenderCommandType.RenderMesh))
-                    {
-                        if (_commandPool[RenderCommandType.RenderMesh].Count > 0)
-                        {
-                            command = (DrawElementsBaseVertexCommand)_commandPool[RenderCommandType.RenderMesh].Pop();
-                            command.Repackage(pointer, transform, testShader);
-                        }
-                        else
-                        {
-                            command = new DrawElementsBaseVertexCommand(pointer, transform, testShader);
-                            _logger.Warn("Created new render command");
-                        }
-                    }
-                    else
-                    {
-                        command = new DrawElementsBaseVertexCommand(pointer, transform, testShader);
-                        _logger.Warn("Created new render command");
-                    }
-
+                    var command = GetRenderCommand<DrawElementsBaseVertexCommand>(RenderCommandType.RenderMesh);
+                    command.Package(pointer, transform, testShader);
                     _renderCommands.Push(command);
-
                 }
             }
 
@@ -282,32 +271,74 @@ namespace Engine.Renderer
             }
         }
 
+        private T GetRenderCommand<T>(RenderCommandType type) where T : RenderCommand, new()
+        {
+            T command;
+            if (_commandPool.ContainsKey(type))
+            {
+                if (_commandPool[type].Count > 0)
+                {
+                    command = (T)_commandPool[type].Pop();
+                }
+                else
+                {
+                    command = new T();
+                    _logger.Warn("Created new render command");
+                }
+            }
+            else
+            {
+                command = new T();
+                _logger.Warn("Created new render command");
+            }
+
+            return command;
+        }
+
+        private void FreeRenderCommand(RenderCommand command)
+        {
+            if (_commandPool.ContainsKey(command.Type))
+            {
+                _commandPool[command.Type].Push(command);
+            }
+            else
+            {
+                _commandPool.Add(command.Type, new Stack<RenderCommand>());
+                _commandPool[command.Type].Push(command);
+            }
+        }
+
         public void ProcessRenderCommands()
         {
             while (_renderCommands.Count > 0)
             {
                 var c = _renderCommands.Pop();
-                if (c.Type == RenderCommandType.RenderMesh)
+                switch (c.Type)
                 {
-                    var command = (DrawElementsBaseVertexCommand) c;
-                    command.Shader.Use();
-                    testShader.SetMaterial("material", command.DataPointer.MeshMaterial);
-                    testShader.SetMat4("model", command.Transform.ModelMatrix);
-                    testShader.SetMat4("view", view);
-                    testShader.SetMat4("projection", projection);
-                    testShader.SetMat4("mvp", command.Transform.ModelMatrix * view * projection);
-
-                    GL.DrawElementsBaseVertex(PrimitiveType.Triangles, command.DataPointer.Count, DrawElementsType.UnsignedInt,
-                        (IntPtr) 0, command.DataPointer.Start);
-
-                    if (_commandPool.ContainsKey(command.Type))
+                    case RenderCommandType.RenderMesh:
                     {
-                        _commandPool[command.Type].Push(command);
+                        var command = (DrawElementsBaseVertexCommand) c;
+                        command.Shader.Use();
+                        testShader.SetMaterial("material", command.DataPointer.MeshMaterial);
+                        testShader.SetMat4("model", command.Transform.ModelMatrix);
+                        testShader.SetMat4("view", view);
+                        testShader.SetMat4("projection", projection);
+                        testShader.SetMat4("mvp", command.Transform.ModelMatrix * view * projection);
+
+                        GL.DrawElementsBaseVertex(PrimitiveType.Triangles, command.DataPointer.Count, DrawElementsType.UnsignedInt,
+                            (IntPtr) 0, command.DataPointer.Start);
+
+                        FreeRenderCommand(command);
+
+                        break;
                     }
-                    else
+
+                    case RenderCommandType.RenderText:
                     {
-                        _commandPool.Add(command.Type, new Stack<IRenderCommand>());
-                        _commandPool[command.Type].Push(command);
+                        var command = (RenderTextCommand) c;
+                        fontRenderer.RenderText(textShader, command.Text, command.X, command.Y, 1.0f, command.Color);
+                        FreeRenderCommand(command);
+                        break;
                     }
                 }
             }
@@ -344,6 +375,13 @@ namespace Engine.Renderer
         {
 
             _windowManager.GetActiveWindow().SwapBuffers();
+        }
+
+        public void RenderText(string text, float x, float y, Vector3 color)
+        {
+            var command = GetRenderCommand<RenderTextCommand>(RenderCommandType.RenderText);
+            command.Package(text, x, y, color);
+            _renderCommands.Push(command);
         }
     }
 }
