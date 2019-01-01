@@ -5,9 +5,11 @@ using Engine.Input;
 using Engine.Renderer;
 using Engine.Resources;
 using Engine.System;
+using Engine.UI;
 using Engine.World;
 using OpenTK;
 using OpenTK.Input;
+using NotImplementedException = System.NotImplementedException;
 
 namespace Engine.Core
 {
@@ -20,6 +22,7 @@ namespace Engine.Core
         private InputManager _inputManager;
         private RenderManager _renderManager;
         private TransformManager _transformManager;
+        private UIManager _uiManager;
 
         private GameWindow _activeWindow;
 
@@ -40,6 +43,7 @@ namespace Engine.Core
             _engineSystems.AddSystem(new TransformManager(_engineSystems));
             _engineSystems.AddSystem(new RenderManager(_engineSystems));
             _engineSystems.AddSystem(new OpenGLRendererCore(_engineSystems));
+            _engineSystems.AddSystem(new UIManager(_engineSystems));
 
             _windowManager = _engineSystems.GetSystem<WindowManager>();
             _windowManager.NewWindow(width, height, title);
@@ -59,6 +63,8 @@ namespace Engine.Core
 
             _renderManager = _engineSystems.GetSystem<RenderManager>();
 
+            _uiManager = _engineSystems.GetSystem<UIManager>();
+
             _activeWindow = _windowManager.GetActiveWindow();
 
             _activeWindow.TargetRenderFrequency = 60.0;
@@ -66,18 +72,42 @@ namespace Engine.Core
             _activeWindow.UpdateFrame += WindowOnUpdateFrame;
             _activeWindow.RenderFrame += WindowOnRenderFrame;
 
-            _activeWindow.KeyDown += (sender, args) => { _inputManager.OnKeyDown(args); };
+            _activeWindow.KeyDown += OnKeyDown;
 
-            _activeWindow.KeyUp += (sender, args) => { _inputManager.OnKeyUp(args); };
+            _activeWindow.KeyUp += OnKeyUp;
 
-            _activeWindow.KeyPress += (sender, args) => { _inputManager.OnKeyPress(args); };
+            _activeWindow.KeyPress += OnKeyPress;
 
-            _activeWindow.MouseMove += (sender, args) => { _inputManager.OnMouseMove(args); };
+            _activeWindow.MouseMove += OnMouseMove;
+
+            _activeWindow.MouseDown += OnMouseDown;
 
             _activeWindow.CursorVisible = false;
+        }
 
-            _activeWindow.TargetRenderFrequency = 500f;
-            _activeWindow.VSync = VSyncMode.Off;
+        private void OnMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _uiManager.MouseClick(e);
+        }
+
+        private void OnKeyDown(object sender, KeyboardKeyEventArgs args)
+        {
+            _inputManager.OnKeyDown(args);
+        }
+
+        private void OnKeyUp(object sender, KeyboardKeyEventArgs args)
+        {
+            _inputManager.OnKeyUp(args);
+        }
+
+        private void OnKeyPress(object sender, KeyPressEventArgs args)
+        {
+            _inputManager.OnKeyPress(args);
+        }
+
+        private void OnMouseMove(object sender, MouseMoveEventArgs args)
+        {
+            _inputManager.OnMouseMove(args);
         }
 
         private void WindowOnUpdateFrame(object sender, FrameEventArgs e)
@@ -85,6 +115,7 @@ namespace Engine.Core
             _inputManager.ProcessMouseInput();
             _engineSystems.GetSystem<CameraManager>().UpdateActiveCamera((float)e.Time);
             _game.UpdateGame((float)e.Time);
+            _uiManager.Update((float)e.Time);
 
             if (_inputManager.KeyPressed(Key.Escape))
             {
@@ -100,6 +131,11 @@ namespace Engine.Core
             if (_inputManager.KeyPressed(Key.F3))
             {
                 _renderManager.Debug = !_renderManager.Debug;
+            }
+
+            if (_inputManager.KeyPressed(Key.V))
+            {
+                _activeWindow.VSync = _activeWindow.VSync == VSyncMode.On ? VSyncMode.Off : VSyncMode.On;
             }
 
             _inputManager.Update();

@@ -6,6 +6,7 @@ using Engine.Input;
 using Engine.Lighting;
 using Engine.Resources;
 using Engine.System;
+using Engine.UI;
 using Engine.World;
 using OpenTK;
 using OpenTK.Graphics;
@@ -19,6 +20,7 @@ namespace Engine.Game
         private EntityManager _entityManager;
         private ResourceManager _resourceManager;
         private InputManager _inputManager;
+        private UIManager _uiManager;
 
         private ILight light;
         private EntityManager.Entity entity;
@@ -37,6 +39,7 @@ namespace Engine.Game
             _worldManager = _engineSystems.GetSystem<WorldManager>();
             _entityManager = _engineSystems.GetSystem<EntityManager>();
             _resourceManager = _engineSystems.GetSystem<ResourceManager>();
+            _uiManager = _engineSystems.GetSystem<UIManager>();
 
             var world = _worldManager.NewWorld();
             _worldManager.SetActiveWorld(world);
@@ -52,6 +55,9 @@ namespace Engine.Game
 
             light = world.AddPointLight(new PointLight(new Color4(1.0f, 1.0f, 1.0f, 1.0f), new Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4.White));
             light.Transform.Position = new Vector3(5.0f, 5.0f, 5.0f);
+
+            _uiManager.AddScreen("test", new TestScreen());
+            _uiManager.SetActiveScreen("test");
         }
 
         public override void Update(float dt)

@@ -3,6 +3,7 @@
     public enum RenderCommandType
     {
         RenderMesh,
-        RenderText
+        RenderText,
+        RenderUIShape
     }
 }

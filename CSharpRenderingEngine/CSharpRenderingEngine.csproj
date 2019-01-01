@@ -185,7 +185,8 @@
     <Compile Include="Logger.cs" />
     <Compile Include="Renderer\Character.cs" />
     <Compile Include="Renderer\DrawElementsBaseVertexCommand.cs" />
-    <Compile Include="Renderer\FontRenderer.cs" />
+    <Compile Include="Renderer\RenderUIShapeCommand.cs" />
+    <Compile Include="UI\FontRenderer.cs" />
     <Compile Include="Renderer\Line3D.cs" />
     <Compile Include="Renderer\MeshDataPointer.cs" />
     <Compile Include="Renderer\OpenGLRendererCore.cs" />
@@ -193,6 +194,16 @@
     <Compile Include="Renderer\RenderCommandType.cs" />
     <Compile Include="Renderer\RenderTextCommand.cs" />
     <Compile Include="System\ISystem.cs" />
+    <Compile Include="UI\Rect.cs" />
+    <Compile Include="UI\TestScreen.cs" />
+    <Compile Include="UI\Transform2D.cs" />
+    <Compile Include="UI\UIButton.cs" />
+    <Compile Include="UI\UIComponent.cs" />
+    <Compile Include="UI\UIManager.cs" />
+    <Compile Include="UI\UIShape.cs" />
+    <Compile Include="UI\UIMeshDataPointer.cs" />
+    <Compile Include="UI\UIRendererCore.cs" />
+    <Compile Include="UI\UIScreen.cs" />
     <Compile Include="WindowManager.cs" />
     <Compile Include="World\World.cs" />
     <Compile Include="System\System.cs" />
@@ -228,6 +239,8 @@
     <None Include="Assets\Shaders\debug.vert" />
     <None Include="Assets\Shaders\Main.frag" />
     <None Include="Assets\Shaders\Main.vert" />
+    <None Include="Assets\Shaders\ui.frag" />
+    <None Include="Assets\Shaders\ui.vert" />
     <None Include="Assets\Shaders\Text.frag" />
     <None Include="Assets\Shaders\Text.vert" />
     <None Include="OpenTK.dll.config" />

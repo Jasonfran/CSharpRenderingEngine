@@ -9,9 +9,13 @@ namespace Engine.Renderer
         public float X { get; private set; }
         public float Y { get; private set; }
 
-        public void Package(string text, float x, float y, Vector3 color)
+        public RenderTextCommand()
         {
             Type = RenderCommandType.RenderText;
+        }
+
+        public void Package(string text, float x, float y, Vector3 color)
+        {
             Text = text;
             Color = color;
             X = x;
