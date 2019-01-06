@@ -51,7 +51,7 @@ namespace Engine.UI
                 verts.AddRange(rectVerts);
             }
 
-            if (sizeof(float) * verts.Count < uiVertexBuffer.GetSize())
+            if (sizeof(float) * verts.Count > uiVertexBuffer.GetSize())
             {
                 uiVertexBuffer.Resize(sizeof(float) * verts.Count);
             }

@@ -83,10 +83,6 @@ namespace Engine.Renderer
             _windowManager = EngineSystems.GetSystem<WindowManager>();
             _windowManager.GetActiveWindow().MakeCurrent();
 
-            fontRenderer = new FontRenderer(_windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
-            uiRenderer = new UIRendererCore(_windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
-            uiRenderer.LoadUIObjectMeshData();
-
             _resourceManager = EngineSystems.GetSystem<ResourceManager>();
 
             GL.Viewport(0, 0, _windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
@@ -95,10 +91,13 @@ namespace Engine.Renderer
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.CullFace(CullFaceMode.Back);
 
+            fontRenderer = new FontRenderer(_windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
+            uiRenderer = new UIRendererCore(_windowManager.GetActiveWindow().Width, _windowManager.GetActiveWindow().Height);
+            uiRenderer.LoadUIObjectMeshData();
+
             CreateDebugVertexBuffer();
 
             CreateVertexDataBuffers();
-
 
             CreateLightUniformBuffer(0);
 
@@ -228,6 +227,8 @@ namespace Engine.Renderer
 
         private void LoadModelData(Model model)
         {
+            GL.BindVertexArray(_vao);
+            vertexBuffer.Bind();
             var name = model.Path;
             var meshes = model.Meshes;
 
@@ -243,6 +244,7 @@ namespace Engine.Renderer
             }
 
             vertexBuffer.UpdateData(0, _vertices.Count * Vertex.Stride, _vertices.ToArray());
+            //GL.BufferSubData(BufferTarget.ArrayBuffer, _lightDataPtr, _vertices.Count * Vertex.Stride, _vertices.ToArray());
 
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Count * sizeof(uint), _indices.ToArray(),
                 BufferUsageHint.StaticDraw);
@@ -261,12 +263,6 @@ namespace Engine.Renderer
             {
                 foreach (var pointer in pointers)
                 {
-                    testShader.SetMaterial("material", pointer.MeshMaterial);
-                    testShader.SetMat4("model", transform.ModelMatrix);
-                    testShader.SetMat4("view", view);
-                    testShader.SetMat4("projection", projection);
-                    testShader.SetMat4("mvp", transform.ModelMatrix * view * projection);
-
                     var command = GetRenderCommand<DrawElementsBaseVertexCommand>(RenderCommandType.RenderMesh);
                     command.Package(pointer, transform, testShader);
                     _renderCommands.Enqueue(command);
@@ -388,8 +384,6 @@ namespace Engine.Renderer
         {
             GL.ClearColor(Color4.Black);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            GL.BindVertexArray(_vao);
-            testShader.Use();
         }
 
         public void FrameEnd()
